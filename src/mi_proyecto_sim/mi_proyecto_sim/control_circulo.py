@@ -5,10 +5,6 @@ from geometry_msgs.msg import Twist, Point
 from nav_msgs.msg import Odometry
 import math
 import tf_transformations
-import csv
-import matplotlib.pyplot as plt
-import os
-from datetime import datetime
 from rclpy.signals import SignalHandlerOptions
 
 class ControlCirculoReal(Node):
@@ -32,20 +28,10 @@ class ControlCirculoReal(Node):
         self.offset_theta = None
         
         self.x = 0.0; self.y = 0.0; self.theta = 0.0
-        self.time_history = []; self.error_history = []
         
         self.start_time = self.get_clock().now()
         self.timer = self.create_timer(0.05, self.control_loop)
-
-        # --- NUEVAS LISTAS PARA EL PLANO XY ---
-        self.xd_history = []
-        self.yd_history = []
-        self.xc_history = []
-        self.yc_history = []
-        # Mantener las de error
-        self.time_history = []
-        self.error_history = []
-
+    
     def odom_callback(self, msg):
         # Obtener pose cruda del sensor [cite: 18]
         raw_x = msg.pose.pose.position.x
@@ -76,7 +62,7 @@ class ControlCirculoReal(Node):
         t = (self.get_clock().now() - self.start_time).nanoseconds / 1e9
         
         # Trayectoria Deseada Circular [cite: 258]
-        R = 2.0; w_d = 0.15
+        R = 0.25; w_d = 0.15
         x_d = R * math.cos(w_d * t)
         y_d = R * math.sin(w_d * t)
         xd_dot = -R * w_d * math.sin(w_d * t)
@@ -90,16 +76,6 @@ class ControlCirculoReal(Node):
         e_x = x_d - x_c
         e_y = y_d - y_c
         error_total = math.hypot(e_x, e_y)
-        
-        # --- GUARDAR EN HISTORIAL ---
-        self.xd_history.append(x_d)
-        self.yd_history.append(y_d)
-        self.xc_history.append(x_c)
-        self.yc_history.append(y_c)
-        
-        # Guardar error y tiempo
-        self.time_history.append(t)
-        self.error_history.append(error_total)
         
         # Ley de control Proporcional + Feedforward [cite: 167]
         u_x = xd_dot + self.k_p * e_x
@@ -119,37 +95,6 @@ class ControlCirculoReal(Node):
         self.path_pub.publish(Point(x=x_d, y=y_d, z=0.0))
         self.actual_pub.publish(Point(x=x_c, y=y_c, z=0.0))
 
-    def exportar_datos(self):
-        # Eliminamos el timestamp para que el nombre sea fijo
-        dir_path = "/ros2_ws/src/mi_proyecto_sim/"
-        
-        # 1. Guardar CSV (Sobreescribe siempre el mismo archivo)
-        csv_file = os.path.join(dir_path, "ultimo_reporte_circulo.csv")
-        with open(csv_file, mode='w') as f:
-            writer = csv.writer(f)
-            writer.writerow(["Time", "Error"])
-            for row in zip(self.time_history, self.error_history): 
-                writer.writerow(row)
-
-        # 2. Guardar PNG de Error
-        plt.figure(figsize=(10, 5))
-        plt.plot(self.time_history, self.error_history, color='blue', label='Error de Trayectoria')
-        plt.title('Control de Seguimiento Circular (Kelly & Diaz)')
-        plt.xlabel('Tiempo [s]'); plt.ylabel('Error [m]'); plt.grid(True)
-        plt.savefig(os.path.join(dir_path, "ultima_grafica_error_circulo.png"))
-        plt.close()
-
-        # 3. Guardar PNG de Trayectoria XY
-        plt.figure(figsize=(8, 8))
-        plt.plot(self.xd_history, self.yd_history, 'r--', label='Deseada')
-        plt.plot(self.xc_history, self.yc_history, 'b-', label='Real')
-        plt.title('Plano XY - Círculo')
-        plt.axis('equal'); plt.grid(True); plt.legend()
-        plt.savefig(os.path.join(dir_path, "ultima_trayectoria_circulo.png"))
-        plt.close()
-        
-        self.get_logger().info(f"✅ Reportes de CÍRCULO actualizados en: {dir_path}")
-
 def main(args=None):
     # Usar SignalHandlerOptions.NO para evitar el crash de contexto al dar Ctrl+C
     rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
@@ -159,7 +104,6 @@ def main(args=None):
     except KeyboardInterrupt:
         node.get_logger().info("🛑 Deteniendo prueba circular...")
         node.cmd_pub.publish(Twist())
-        node.exportar_datos()
     finally:
         node.destroy_node()
         rclpy.shutdown()

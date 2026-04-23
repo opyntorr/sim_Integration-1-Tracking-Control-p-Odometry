@@ -64,48 +64,10 @@ def generate_launch_description():
         output='screen'
     )
 
-    # 6. RViz
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        output='screen',
-        arguments=['-d', '/ros2_ws/src/mi_proyecto_sim/configuracion.rviz'],
-        parameters=[{'use_sim_time': True}]
-    )
-
-    # 7. GRÁFICAS DE RQT (Configuradas para esperar datos)
-    # 8. GRÁFICA 1: Error de seguimiento (Accediendo al campo .z del mensaje Point)
-    plot_error = Node(
-        package='rqt_plot',
-        executable='rqt_plot',
-        name='plot_error',
-        # Agregamos /z al final para que rqt_plot sepa qué valor graficar
-        arguments=['/tracking_error/z'],
-        output='screen'
-    )
-
-    # 9. GRÁFICA 2: Comparativa de Coordenadas (Accediendo a campos .x y .y)
-    plot_trayectoria = Node(
-        package='rqt_plot',
-        executable='rqt_plot',
-        name='plot_trayectoria',
-        arguments=[
-            '/desired_trajectory/x', 
-            '/actual_trajectory/x',
-            '/desired_trajectory/y', 
-            '/actual_trajectory/y'
-        ],
-        output='screen'
-    )
-
     return LaunchDescription([
         plugin_env,
         gazebo,
         puente,
         robot_state_publisher,
         spawner,
-        rviz_node,
-        plot_error,
-        plot_trayectoria
     ])

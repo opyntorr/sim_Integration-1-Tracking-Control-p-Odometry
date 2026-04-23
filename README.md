@@ -50,7 +50,7 @@ Este nodo mueve el robot hacia una posición `(x, y)` específica utilizando la 
   ```
 
 ### 2. Seguimiento de Trayectoria Circular
-Este nodo hace que el robot siga una trayectoria circular de radio 2.0m.
+Este nodo hace que el robot siga una trayectoria circular de radio 0.25m.
 
 - **Comando:**
   ```bash

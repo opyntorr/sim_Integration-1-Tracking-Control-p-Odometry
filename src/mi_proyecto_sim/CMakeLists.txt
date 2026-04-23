@@ -21,6 +21,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 install(PROGRAMS
   mi_proyecto_sim/control_circulo.py
   mi_proyecto_sim/control_punto.py
+  mi_proyecto_sim/plotter.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

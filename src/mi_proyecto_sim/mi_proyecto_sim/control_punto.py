@@ -5,17 +5,13 @@ from geometry_msgs.msg import Twist, Point
 from nav_msgs.msg import Odometry
 import math
 import tf_transformations
-import csv
-import matplotlib.pyplot as plt
-import os
-from datetime import datetime
 from rclpy.signals import SignalHandlerOptions
 
 class ControlPuntoReal(Node):
     def __init__(self):
         super().__init__('control_punto')
-        self.declare_parameter('target_x', 2.0)
-        self.declare_parameter('target_y', 2.0)
+        self.declare_parameter('target_x', 0.5)
+        self.declare_parameter('target_y', 0.5)
         
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
@@ -30,12 +26,6 @@ class ControlPuntoReal(Node):
         # --- RESET INTERNO ---
         self.offset_x = None; self.offset_y = None; self.offset_theta = None
         self.x = 0.0; self.y = 0.0; self.theta = 0.0
-        
-        # --- HISTORIAL PARA REPORTES ---
-        self.time_history = []
-        self.error_history = []
-        self.xc_history = [] # Trayectoria real del punto h
-        self.yc_history = []
         
         self.start_time = self.get_clock().now()
         self.timer = self.create_timer(0.05, self.control_loop)
@@ -72,12 +62,6 @@ class ControlPuntoReal(Node):
         e_y = y_d - y_c
         error_total = math.hypot(e_x, e_y)
         
-        # --- GUARDAR DATOS ---
-        self.time_history.append(t)
-        self.error_history.append(error_total)
-        self.xc_history.append(x_c)
-        self.yc_history.append(y_c)
-        
         # Ley de control
         u_x = self.k_p * e_x
         u_y = self.k_p * e_y
@@ -97,48 +81,14 @@ class ControlPuntoReal(Node):
         self.path_pub.publish(Point(x=x_d, y=y_d, z=0.0))
         self.actual_pub.publish(Point(x=x_c, y=y_c, z=0.0))
 
-    def exportar_datos(self):
-        dir_path = "/ros2_ws/src/mi_proyecto_sim/"
-        target_x = self.get_parameter('target_x').get_parameter_value().double_value
-        target_y = self.get_parameter('target_y').get_parameter_value().double_value
-        
-        # 1. Guardar CSV fijo
-        csv_file = os.path.join(dir_path, "ultimo_reporte_punto.csv")
-        with open(csv_file, mode='w') as f:
-            writer = csv.writer(f)
-            writer.writerow(["Time", "Error"])
-            for row in zip(self.time_history, self.error_history): 
-                writer.writerow(row)
-
-        # 2. Guardar PNG de Error
-        plt.figure(figsize=(10, 4))
-        plt.plot(self.time_history, self.error_history, color='green', label='Error')
-        plt.title(f'Regulación hacia ({target_x}, {target_y})')
-        plt.xlabel('Tiempo [s]'); plt.ylabel('Error [m]'); plt.grid(True)
-        plt.savefig(os.path.join(dir_path, "ultima_grafica_error_punto.png"))
-        plt.close()
-
-        # 3. Guardar PNG de Trayectoria XY
-        plt.figure(figsize=(8, 8))
-        plt.plot(0, 0, 'go', label='Inicio')
-        plt.plot(target_x, target_y, 'rx', label='Meta')
-        plt.plot(self.xc_history, self.yc_history, 'b-', label='Trayecto')
-        plt.title('Plano XY - Punto Fijo')
-        plt.axis('equal'); plt.grid(True); plt.legend()
-        plt.savefig(os.path.join(dir_path, "ultima_trayectoria_punto.png"))
-        plt.close()
-        
-        self.get_logger().info(f"✅ Reportes de PUNTO actualizados en: {dir_path}")
-
 def main(args=None):
     rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
     node = ControlPuntoReal()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.get_logger().info("🛑 Generando archivos finales...")
+        node.get_logger().info("🛑 Deteniendo controlador de punto...")
         node.cmd_pub.publish(Twist())
-        node.exportar_datos()
     finally:
         node.destroy_node()
         rclpy.shutdown()
