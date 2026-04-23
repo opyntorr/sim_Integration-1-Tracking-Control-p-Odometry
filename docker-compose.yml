@@ -1,0 +1,36 @@
+
+services:
+  simulacion_ros:
+    build: .
+    container_name: rosmaster_sim
+    user: "opyntorr"
+    # Configuración de red para compartir la del host (facilita la comunicación ROS)
+    network_mode: "host"
+    environment:
+      # Pasar el display para RViz e Ignition Gazebo
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      # IGN_GAZEBO_SYSTEM_PLUGIN_PATH ya está en tu launch, pero es bueno asegurarlo
+      - IGN_GAZEBO_SYSTEM_PLUGIN_PATH=/opt/ros/humble/lib
+      # Configuración de NVIDIA para aceleración por hardware
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      # Montar el socket de X11 para la GUI
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Montar dispositivos de renderizado para aceleración gráfica
+      - /dev/dri:/dev/dri
+      # Montar tu código fuente dentro del contenedor
+      - ./src:/ros2_ws/src:rw
+    # Reserva de la GPU NVIDIA
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    stdin_open: true
+    tty: true
+    privileged: true
+    command: bash

@@ -1,0 +1,30 @@
+# ROS 2 build artifacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Colcon
+.colcon/
+
+# Docker (optional, but good to have)
+.dockerignore
+
+# IDEs
+.vscode/
+.idea/
+.project
+.settings/
+.classpath
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+    <name>mi_proyecto_sim</name>
+    <version>0.0.0</version>
+    <description>Paquete de simulación para Rover con control de trayectoria Kelly &amp; Diaz y
+        planificador RRT</description>
+    <maintainer email="omar@todo.com">Omar Payán</maintainer>
+    <license>Apache-2.0</license>
+
+    <buildtool_depend>ament_cmake</buildtool_depend>
+
+    <depend>rclcpp</depend>
+    <depend>rclpy</depend>
+    <depend>std_msgs</depend>
+    <depend>geometry_msgs</depend>
+    <depend>nav_msgs</depend>
+    <depend>sensor_msgs</depend>
+    <depend>tf2</depend>
+    <depend>tf2_ros</depend>
+    <depend>tf2_geometry_msgs</depend>
+
+    <depend>ros_gz_bridge</depend>
+    <depend>ros_gz_sim</depend>
+    <depend>launch_ros</depend>
+    <depend>nav2_map_server</depend>
+    <depend>nav2_lifecycle_manager</depend>
+    <depend>slam_toolbox</depend>
+    <depend>joy</depend>
+    <depend>teleop_twist_joy</depend>
+
+    <depend>xacro</depend>
+    <depend>robot_state_publisher</depend>
+    <depend>libopencv-dev</depend>
+    <depend>urdf_tutorial</depend>
+    <depend>rqt_plot</depend>
+    <depend>rviz2</depend>
+
+    <exec_depend>python3-opencv</exec_depend>
+    <exec_depend>python3-matplotlib</exec_depend>
+    <exec_depend>python3-transforms3d</exec_depend>
+    <exec_depend>tf_transformations</exec_depend>
+
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
+</package>
