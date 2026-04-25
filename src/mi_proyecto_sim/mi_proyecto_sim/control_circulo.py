@@ -18,9 +18,17 @@ class ControlCirculoReal(Node):
         self.path_pub = self.create_publisher(Point, '/desired_trajectory', 10)
         self.actual_pub = self.create_publisher(Point, '/actual_trajectory', 10)
         
-        # Parámetros Kelly & Diaz [cite: 8]
-        self.h = 0.15      # Distancia del punto de control [cite: 52]
-        self.k_p = 1.5     # Ganancia proporcional [cite: 169]
+        # Parámetros Kelly & Diaz (Modificado a PID)
+        self.h = 0.15      # Distancia del punto de control
+        self.k_p = 1.5     # Ganancia proporcional
+        self.k_i = 0.01    # Ganancia integral
+        self.k_d = 0.1     # Ganancia derivativa
+        
+        # Variables PID
+        self.int_e_x = 0.0
+        self.int_e_y = 0.0
+        self.prev_e_x = 0.0
+        self.prev_e_y = 0.0
         
         # --- LÓGICA DE RESET INTERNO ---
         self.offset_x = None
@@ -61,8 +69,8 @@ class ControlCirculoReal(Node):
 
         t = (self.get_clock().now() - self.start_time).nanoseconds / 1e9
         
-        # Trayectoria Deseada Circular [cite: 258]
-        R = 0.25; w_d = 0.15
+        # Trayectoria Deseada Circular
+        R = 1.0; w_d = 0.15
         x_d = R * math.cos(w_d * t)
         y_d = R * math.sin(w_d * t)
         xd_dot = -R * w_d * math.sin(w_d * t)
@@ -72,14 +80,26 @@ class ControlCirculoReal(Node):
         x_c = self.x + self.h * math.cos(self.theta)
         y_c = self.y + self.h * math.sin(self.theta)
         
-        # Errores de posición [cite: 169]
+        # Errores de posición
         e_x = x_d - x_c
         e_y = y_d - y_c
         error_total = math.hypot(e_x, e_y)
         
-        # Ley de control Proporcional + Feedforward [cite: 167]
-        u_x = xd_dot + self.k_p * e_x
-        u_y = yd_dot + self.k_p * e_y
+        dt = 0.05
+        # Integrales
+        self.int_e_x += e_x * dt
+        self.int_e_y += e_y * dt
+        
+        # Derivadas
+        d_e_x = (e_x - self.prev_e_x) / dt
+        d_e_y = (e_y - self.prev_e_y) / dt
+        
+        self.prev_e_x = e_x
+        self.prev_e_y = e_y
+        
+        # Ley de control PID + Feedforward
+        u_x = xd_dot + self.k_p * e_x + self.k_i * self.int_e_x + self.k_d * d_e_x
+        u_y = yd_dot + self.k_p * e_y + self.k_i * self.int_e_y + self.k_d * d_e_y
         
         # Matriz inversa para robot diferencial [cite: 82]
         v = u_x * math.cos(self.theta) + u_y * math.sin(self.theta)

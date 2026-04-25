@@ -19,9 +19,17 @@ class ControlPuntoReal(Node):
         self.path_pub = self.create_publisher(Point, '/desired_trajectory', 10)
         self.actual_pub = self.create_publisher(Point, '/actual_trajectory', 10)
         
-        # Parámetros Kelly & Diaz
+        # Parámetros Kelly & Diaz (Modificado a PID)
         self.h = 0.15      # Distancia de desplazamiento
-        self.k_p = 1.5     # Ganancia proporcional
+        self.k_p = 2.5     # Ganancia proporcional
+        self.k_i = 0.05    # Ganancia integral
+        self.k_d = 0.2     # Ganancia derivativa
+        
+        # Variables PID
+        self.int_e_x = 0.0
+        self.int_e_y = 0.0
+        self.prev_e_x = 0.0
+        self.prev_e_y = 0.0
         
         # --- RESET INTERNO ---
         self.offset_x = None; self.offset_y = None; self.offset_theta = None
@@ -62,9 +70,21 @@ class ControlPuntoReal(Node):
         e_y = y_d - y_c
         error_total = math.hypot(e_x, e_y)
         
-        # Ley de control
-        u_x = self.k_p * e_x
-        u_y = self.k_p * e_y
+        dt = 0.05
+        # Integrales
+        self.int_e_x += e_x * dt
+        self.int_e_y += e_y * dt
+        
+        # Derivadas
+        d_e_x = (e_x - self.prev_e_x) / dt
+        d_e_y = (e_y - self.prev_e_y) / dt
+        
+        self.prev_e_x = e_x
+        self.prev_e_y = e_y
+        
+        # Ley de control PID
+        u_x = self.k_p * e_x + self.k_i * self.int_e_x + self.k_d * d_e_x
+        u_y = self.k_p * e_y + self.k_i * self.int_e_y + self.k_d * d_e_y
         
         # Velocidades diferenciales
         v = u_x * math.cos(self.theta) + u_y * math.sin(self.theta)
